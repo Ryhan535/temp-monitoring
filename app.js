@@ -8,6 +8,7 @@ const firebaseConfig = {
   projectId: "data-center-40843",
   admin_key: "WEB_ADMIN_456"   // SAMA dengan di rules
 };
+const ADMIN_KEY = firebaseConfig.admin_key;
 
 const app = initializeApp(firebaseConfig);
 const rtdb = getDatabase(app);
@@ -85,7 +86,7 @@ async function loadThresholds() {
       const defaultThresholds = {
         tempHigh: 35,
         humHigh: 80,
-        admin_key: WEB_ADMIN_456
+        admin_key: ADMIN_KEY
       };
       await set(thresholdsRef, defaultThresholds);
       thresholds = { tempHigh: 35, humHigh: 80 };
@@ -102,36 +103,6 @@ function updateThresholdDisplay() {
   setText('threshold-hum', `${thresholds.humHigh.toFixed(1)}%`);
   setText('threshold-temp-critical', `${(thresholds.tempHigh + 5).toFixed(1)}°C`);
   setText('threshold-hum-critical', `${(thresholds.humHigh + 5).toFixed(1)}%`);
-
-if (detailsElements.tempHigh) {
-  detailsElements.tempHigh.addEventListener('input', (event) => {
-    thresholds.tempHigh = parseFloat(event.target.value);
-    detailsElements.tempHighValue.textContent = thresholds.tempHigh.toFixed(1);
-    // Kirim bersama admin_key
-    set(thresholdsRef, {
-      tempHigh: thresholds.tempHigh,
-      humHigh: thresholds.humHigh,
-      admin_key: WEB_ADMIN_456
-    });
-    updateThresholdDisplay();
-    updateDetailsAlerts();
-  });
-}
-
-if (detailsElements.humHigh) {
-  detailsElements.humHigh.addEventListener('input', (event) => {
-    thresholds.humHigh = parseFloat(event.target.value);
-    detailsElements.humHighValue.textContent = thresholds.humHigh.toFixed(1);
-    set(thresholdsRef, {
-      tempHigh: thresholds.tempHigh,
-      humHigh: thresholds.humHigh,
-      admin_key: WEB_ADMIN_456
-      
-    });
-    updateThresholdDisplay();
-    updateDetailsAlerts();
-  });
-}
 
   if (latestData) {
     if (isIndexPage) updateIndexStatus(latestData);
@@ -501,7 +472,11 @@ if (detailsElements.tempHigh) {
   detailsElements.tempHigh.addEventListener('input', (event) => {
     thresholds.tempHigh = parseFloat(event.target.value);
     detailsElements.tempHighValue.textContent = thresholds.tempHigh.toFixed(1);
-    set(thresholdsRef, thresholds);
+    set(thresholdsRef, {
+      tempHigh: thresholds.tempHigh,
+      humHigh: thresholds.humHigh,
+      admin_key: ADMIN_KEY
+    });
     updateThresholdDisplay();
     updateDetailsAlerts();
   });
@@ -511,7 +486,11 @@ if (detailsElements.humHigh) {
   detailsElements.humHigh.addEventListener('input', (event) => {
     thresholds.humHigh = parseFloat(event.target.value);
     detailsElements.humHighValue.textContent = thresholds.humHigh.toFixed(1);
-    set(thresholdsRef, thresholds);
+    set(thresholdsRef, {
+      tempHigh: thresholds.tempHigh,
+      humHigh: thresholds.humHigh,
+      admin_key: ADMIN_KEY
+    });
     updateThresholdDisplay();
     updateDetailsAlerts();
   });
