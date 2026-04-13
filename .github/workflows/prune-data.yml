@@ -1,0 +1,38 @@
+name: Prune Old Sensor Data
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: curl, json, openssl
+          
+      - name: Create logs directory
+        run: mkdir -p logs
+          
+      - name: Run prune script
+        env:
+          FIRESTORE_PROJECT_ID: ${{ secrets.FIRESTORE_PROJECT_ID }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          php firebase-bridge/prune-data.php
+          
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4  # ← Ubah dari v3 ke v4
+        with:
+          name: prune-logs-${{ github.run_id }}
+          path: logs/
+          retention-days: 7  # Opsional: simpan log selama 7 hari

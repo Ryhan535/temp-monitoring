@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+  <title>Data Center — Monitoring</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="chart.js"></script>
+  <script type="module" src="app.js"></script>
+
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script> -->
+</head>
+
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar Overlay (Mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">🌡</div>
+        <span class="logo-text">Temp Monitoring</span>
+      </div>
+      
+      <nav class="nav">
+        <a class="nav-item active" href="monitoring.html">
+          <span class="nav-icon">📊</span>
+          <span>Dashboard</span>
+        </a>
+        <a class="nav-item" href="details.html">
+          <span class="nav-icon">📋</span>
+          <span>Details</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Mobile Menu Button -->
+    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+      ☰
+    </button>
+
+    <!-- ===== MAIN ===== -->
+    <main class="main">
+      <!-- Header -->
+      <div class="page-header">
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Temperature & Humidity Monitoring</p>
+      </div>
+
+      <div class="realtime-dot">Live Update • 1 m</div>
+
+      <!-- Stat Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Temperature</span>
+            <div class="stat-icon blue">🌡</div>
+          </div>
+          <div class="sensor-value" id="sensor-val-1" style="display:none;">--°C</div>
+          <div class="stat-value" id="stat-suhu">--<span class="stat-unit">°C</span></div>
+          <br><div class="sensor-time" id="sensor-time-1">Memuat data...</div>
+
+
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Relative Humidity</span>
+            <div class="stat-icon green">💧</div>
+          </div>
+          <div class="sensor-value" id="sensor-val-2" style="display:none;">--%</div>
+          <div class="stat-value" id="stat-hum">--<span class="stat-unit">%</span></div>
+          <br><div class="sensor-time" id="sensor-time-2">Memuat data...</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Alert</span>
+            <div class="stat-icon red">⚠</div>
+          </div>
+          <div class="stat-value" id="stat-alerts">0</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Average Temperature(24h)</span>
+            <div class="stat-icon purple">〜</div>
+          </div>
+          <div class="stat-value" id="stat-avg">--<span class="stat-unit">°C</span></div>
+        </div>
+      </div>
+
+      <!-- Threshold Summary Cards -->
+      <div class="threshold-summary-grid">
+        <div class="threshold-summary-card">
+          <div class="threshold-summary-header">
+            <span class="threshold-summary-label">Temp High Alert</span>
+            <span class="threshold-summary-value" id="threshold-temp">35.0°C</span>
+          </div>
+          <div class="threshold-summary-progress">
+            <div class="progress-bar" id="temp-progress" style="width: 0%"></div>
+          </div>
+          <div class="threshold-summary-footer">
+            <span>Critical: <span id="threshold-temp-critical">40.0°C</span></span>
+            <a href="details.html" class="threshold-link">Edit →</a>
+          </div>
+        </div>
+        
+        <div class="threshold-summary-card">
+          <div class="threshold-summary-header">
+            <span class="threshold-summary-label">Humidity High Alert</span>
+            <span class="threshold-summary-value" id="threshold-hum">80.0%</span>
+          </div>
+          <div class="threshold-summary-progress">
+            <div class="progress-bar" id="hum-progress" style="width: 0%"></div>
+          </div>
+          <div class="threshold-summary-footer">
+            <span>Critical: <span id="threshold-hum-critical">85.0%</span></span>
+            <a href="details.html" class="threshold-link">Edit →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart + Alerts -->
+      <div class="content-grid">
+        <!-- Di bagian chart card, ubah judul dan hapus time-range (opsional) -->
+      <div class="chart-card">
+          <div class="chart-title">Temperature Trend (1h)</div>  <!-- sebelumnya 24h -->
+          <div class="chart-subtitle" id="chart-last-update">Data terakhir: --</div>
+          <div class="chart-wrap">
+              <canvas id="tempChart"></canvas>
+          </div>
+      </div>
+
+        <div class="alerts-card">
+          <div class="alerts-title">Recent Alerts</div>
+
+          <div class="alert-item" id="alert-temp-item">
+            <div class="alert-row">
+              <span>🔥</span>
+              <span class="alert-name">High Temperature</span>
+              <span class="badge" id="alert-temp-badge">Normal</span>
+            </div>
+            <div class="alert-desc" id="alert-temp-desc">Dalam batas normal</div>
+            <div class="alert-time" id="alert-temp-time">—</div>
+          </div>
+
+          <div class="alert-item" id="alert-hum-item">
+            <div class="alert-row">
+              <span>💧</span>
+              <span class="alert-name">High Humidity</span>
+              <span class="badge" id="alert-hum-badge">Normal</span>
+            </div>
+            <div class="alert-desc" id="alert-hum-desc">Dalam batas normal</div>
+            <div class="alert-time" id="alert-hum-time">—</div>
+          </div>
+        </div>
+      </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

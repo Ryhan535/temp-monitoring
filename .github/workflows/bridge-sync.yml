@@ -1,0 +1,39 @@
+name: Bridge Sync - RTDB to Firestore
+
+on:
+  schedule:
+    # Jalankan setiap 5 menit
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  sync-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        extensions: json, curl, mbstring
+    
+    - name: Install dependencies
+      run: |
+        composer require kreait/firebase-php
+    
+    - name: Setup Firebase credentials
+      run: |
+        echo '${{ secrets.FIREBASE_CREDENTIALS }}' > firebase-credentials.json
+    
+    - name: Run bridge sync
+      run: php bridge.php
+    
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: bridge-logs
+        path: bridge_log.txt

@@ -1,0 +1,21 @@
+[2026-03-30 03:22:11] ========== PRUNING PROCESS STARTED ==========
+[2026-03-30 03:22:11] Memulai proses penghapusan data sensor > 7 hari
+[2026-03-30 03:22:11] Batas tanggal: 2026-03-23 03:22:11
+[2026-03-30 03:22:11] Batas ISO: 2026-03-23T03:22:11+00:00
+[2026-03-30 03:22:11] Menggunakan Realtime Database: https://data-center-40843-default-rtdb.asia-southeast1.firebasedatabase.app
+[2026-03-30 03:22:11] Tidak ada data yang perlu dihapus
+[2026-03-30 03:22:11] ========== PRUNING PROCESS COMPLETED ==========
+[2026-03-30 03:23:00] ========== PRUNING PROCESS STARTED ==========
+[2026-03-30 03:23:00] Memulai proses penghapusan data sensor > 7 hari
+[2026-03-30 03:23:00] Batas tanggal: 2026-03-23 03:23:00
+[2026-03-30 03:23:00] Batas ISO: 2026-03-23T03:23:00+00:00
+[2026-03-30 03:23:00] Menggunakan Realtime Database: https://data-center-40843-default-rtdb.asia-southeast1.firebasedatabase.app
+[2026-03-30 03:23:00] Tidak ada data yang perlu dihapus
+[2026-03-30 03:23:00] ========== PRUNING PROCESS COMPLETED ==========
+[2026-03-30 03:23:22] ========== PRUNING PROCESS STARTED ==========
+[2026-03-30 03:23:22] Memulai proses penghapusan data sensor > 7 hari
+[2026-03-30 03:23:22] Batas tanggal: 2026-03-23 03:23:22
+[2026-03-30 03:23:22] Batas ISO: 2026-03-23T03:23:22+00:00
+[2026-03-30 03:23:22] Menggunakan Realtime Database: https://data-center-40843-default-rtdb.asia-southeast1.firebasedatabase.app
+[2026-03-30 03:23:23] Tidak ada data yang perlu dihapus
+[2026-03-30 03:23:23] ========== PRUNING PROCESS COMPLETED ==========
