@@ -111,7 +111,7 @@ if (detailsElements.tempHigh) {
     set(thresholdsRef, {
       tempHigh: thresholds.tempHigh,
       humHigh: thresholds.humHigh,
-      admin_key: ADMIN_KEY
+      admin_key: WEB_ADMIN_456
     });
     updateThresholdDisplay();
     updateDetailsAlerts();
@@ -125,7 +125,8 @@ if (detailsElements.humHigh) {
     set(thresholdsRef, {
       tempHigh: thresholds.tempHigh,
       humHigh: thresholds.humHigh,
-      admin_key: ADMIN_KEY
+      admin_key: WEB_ADMIN_456
+      
     });
     updateThresholdDisplay();
     updateDetailsAlerts();
