@@ -8,8 +8,8 @@ const firebaseConfig = {
   admin_key: "WEB_ADMIN_456"   // SAMA dengan di rules
 };
 const ADMIN_KEY = firebaseConfig.admin_key;
-const SUPABASE_URL = "https://xxx.supabase.co/rest/v1/sensor_data";
-const SUPABASE_KEY = "xxxx";
+const SUPABASE_URL = "https://kuhvnqwucjabrdatiycf.supabase.co/rest/v1/sensor_data";
+const SUPABASE_KEY = "sb_publishable_T21IBBwYKQJzR_NKzs6m4g_calRNBij";
 
 const app = initializeApp(firebaseConfig);
 const rtdb = getDatabase(app);
