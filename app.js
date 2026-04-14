@@ -162,6 +162,7 @@ onValue(latestRef, (snapshot) => {
     if (sensor2) sensor2.innerText = `${hum?.toFixed(1) ?? '--'}%`;
     if (sensorTime1) sensorTime1.innerText = timeStr;
     if (sensorTime2) sensorTime2.innerText = timeStr;
+    if (chartLastUpdateEl) chartLastUpdateEl.textContent = `Data terakhir: ${timeStr}`;
     updateIndexStatus({ suhu, humidity: hum });
   }
 
