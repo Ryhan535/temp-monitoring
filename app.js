@@ -1,6 +1,5 @@
 ﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-import { getFirestore, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 const firebaseConfig = {
   authDomain: "data-center-40843.firebaseapp.com",
@@ -8,12 +7,12 @@ const firebaseConfig = {
   projectId: "data-center-40843",
   admin_key: "WEB_ADMIN_456"   // SAMA dengan di rules
 };
-
 const ADMIN_KEY = firebaseConfig.admin_key;
+const SUPABASE_URL = "https://xxx.supabase.co/rest/v1/sensor_data";
+const SUPABASE_KEY = "xxxx";
 
 const app = initializeApp(firebaseConfig);
 const rtdb = getDatabase(app);
-const firestore = getFirestore(app);
 const thresholdsRef = ref(rtdb, "thresholds");
 const latestRef = ref(rtdb, "latest");
 
@@ -316,72 +315,43 @@ function updateDetailsAlerts() {
 async function loadHistory(range = '1h') {
   if (!chartCanvas) return;
 
-  const historyRef = collection(firestore, 'sensor_history');
   const now = new Date();
   let startTime;
 
   if (range === '1h') {
     startTime = new Date(now.getTime() - 60 * 60 * 1000);
-  } else if (range === '6h') {
-    startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
   } else if (range === '24h') {
     startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   } else {
     startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   }
 
-  const q = query(historyRef, orderBy('timestamp', 'desc'), limit(500));
-  let querySnapshot;
+  const url = `${SUPABASE_URL}?select=timestamp,suhu,humidity&timestamp=gte.${startTime.toISOString()}&order=timestamp.asc&limit=500`;
 
   try {
-    querySnapshot = await getDocs(q);
-  } catch (error) {
-    console.error('Error loading history:', error);
-    if (chartLastUpdateEl) chartLastUpdateEl.textContent = 'Gagal memuat data';
-    if (chartInstance) chartInstance.destroy();
-    return;
-  }
+    const res = await fetch(url, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
+      }
+    });
 
-  const data = [];
-  querySnapshot.forEach(doc => {
-    const d = doc.data();
-    const ts = d.timestamp?.toDate ? d.timestamp.toDate() : new Date(d.timestamp);
-    if (ts >= startTime) {
-      data.push({ timestamp: ts, suhu: d.suhu, humidity: d.humidity });
+    if (!res.ok) {
+      throw new Error(`Supabase loadHistory failed: ${res.status} ${res.statusText}`);
     }
-  });
 
-  data.sort((a, b) => a.timestamp - b.timestamp);
+    const data = await res.json();
 
-  let sampledData;
-  if (range === '1h') {
-    sampledData = data.slice(-60);
-  } else if (range === '6h') {
-    sampledData = samplingPerJam(data, 6);
-  } else if (range === '24h') {
-    sampledData = samplingPerJam(data, 24);
-  } else {
-    sampledData = samplingPerHari(data, 7);
-  }
+    const formatted = data.map(d => ({
+      timestamp: new Date(d.timestamp),
+      suhu: d.suhu,
+      humidity: d.humidity
+    }));
 
-  if (!sampledData || sampledData.length === 0) {
-    if (chartInstance) chartInstance.destroy();
-    if (chartLastUpdateEl) chartLastUpdateEl.textContent = 'Tidak ada data baru ditemukan!';
-    return;
-  }
+    updateChart(formatted, range);
 
-  updateChart(sampledData, range);
-
-  let lastUpdateTime = now;
-  if (latestData?.timestamp) {
-    const parsedTime = new Date(latestData.timestamp);
-    if (!Number.isNaN(parsedTime.getTime())) {
-      lastUpdateTime = parsedTime;
-    }
-  }
-
-  if (chartLastUpdateEl) {
-    chartLastUpdateEl.textContent = `Data terakhir: ${lastUpdateTime.toLocaleString('id-ID')}`;
+  } catch (err) {
+    console.error("Error load history:", err);
   }
 }
 
@@ -530,39 +500,34 @@ if (detailsElements.humHigh) {
 }
 
 async function loadRecentReadings() {
-  if (!detailsElements.recentGrid) return;
+  const url = `${SUPABASE_URL}?select=timestamp,suhu,humidity&order=timestamp.desc&limit=4`;
 
   try {
-    const historyRef = collection(firestore, 'sensor_history');
-    const q = query(historyRef, orderBy('timestamp', 'desc'), limit(4));
-    const snapshot = await getDocs(q);
-    const recent = [];
-
-    snapshot.forEach(doc => {
-      const d = doc.data();
-      const ts = d.timestamp?.toDate ? d.timestamp.toDate() : new Date(d.timestamp);
-      recent.push({
-        time: ts.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-        temp: d.suhu,
-        hum: d.humidity
-      });
+    const res = await fetch(url, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
+      }
     });
 
-    if (recent.length === 0) {
-      detailsElements.recentGrid.innerHTML = '<div class="recent-item">Tidak ada data terbaru</div>';
-      return;
+    if (!res.ok) {
+      throw new Error(`Supabase loadRecentReadings failed: ${res.status} ${res.statusText}`);
     }
 
-    detailsElements.recentGrid.innerHTML = recent.map(item => `
+    const data = await res.json();
+
+    detailsElements.recentGrid.innerHTML = data.map(item => `
       <div class="recent-item">
-        <div class="recent-time">${item.time}</div>
-        <div class="recent-temp">${item.temp.toFixed(1)}°C</div>
-        <div class="recent-hum">${item.hum.toFixed(1)}%</div>
+        <div class="recent-time">${new Date(item.timestamp).toLocaleTimeString('id-ID')}</div>
+        <div class="recent-temp">${item.suhu.toFixed(1)}°C</div>
+        <div class="recent-hum">${item.humidity.toFixed(1)}%</div>
       </div>
     `).join('');
   } catch (error) {
     console.error('Error loading recent readings:', error);
-    detailsElements.recentGrid.innerHTML = '<div class="recent-item">Gagal memuat data</div>';
+    if (detailsElements.recentGrid) {
+      detailsElements.recentGrid.innerHTML = '<div class="recent-item">Gagal memuat data</div>';
+    }
   }
 }
 
@@ -581,7 +546,7 @@ loadThresholds();
 
 if (isIndexPage) {
   loadHistory('1h');
-  setInterval(() => loadHistory('1h'), 300000);
+  setInterval(() => loadHistory('1h'), 900000);
 }
 
 if (isDetailsPage) {
