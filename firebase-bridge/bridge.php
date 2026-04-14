@@ -2,8 +2,8 @@
 
 $RTDB_URL = "https://data-center-40843-default-rtdb.asia-southeast1.firebasedatabase.app/latest.json";
 
-$SUPABASE_URL = "https://YOUR_PROJECT.supabase.co/rest/v1/sensor_data";
-$SUPABASE_KEY = "YOUR_ANON_KEY";
+$SUPABASE_URL = "https://kuhvnqwucjabrdatiycf.supabase.co/rest/v1/sensor_data";
+$SUPABASE_KEY = "sb_publishable_T21IBBwYKQJzR_NKzs6m4g_calRNBij";
 
 $lastTimestamp = "";
 
