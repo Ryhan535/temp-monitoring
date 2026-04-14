@@ -371,7 +371,18 @@ async function loadHistory(range = '1h') {
   }
 
   updateChart(sampledData, range);
-  if (chartLastUpdateEl) chartLastUpdateEl.textContent = `Data terakhir: ${now.toLocaleString('id-ID')}`;
+
+  let lastUpdateTime = now;
+  if (latestData?.timestamp) {
+    const parsedTime = new Date(latestData.timestamp);
+    if (!Number.isNaN(parsedTime.getTime())) {
+      lastUpdateTime = parsedTime;
+    }
+  }
+
+  if (chartLastUpdateEl) {
+    chartLastUpdateEl.textContent = `Data terakhir: ${lastUpdateTime.toLocaleString('id-ID')}`;
+  }
 }
 
 function samplingPerJam(data, maxPoints = 24) {
