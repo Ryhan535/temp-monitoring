@@ -1,0 +1,6 @@
+[2026-04-13 08:17:14] ========== PRUNING PROCESS STARTED ==========
+[2026-04-13 08:17:14] Retention: 7 hari
+[2026-04-13 08:17:14] Menghapus data sebelum: 2026-04-06 08:17:14
+[2026-04-13 08:17:14] GAGAL: Service account tidak ditemukan
+[2026-04-13 08:17:14] Pastikan file service-account.json ada atau GCP_SA_KEY sudah diset
+[2026-04-13 08:17:14] ========== PRUNING PROCESS COMPLETED ==========

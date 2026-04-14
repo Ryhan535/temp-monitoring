@@ -8,6 +8,7 @@ const firebaseConfig = {
   projectId: "data-center-40843",
   admin_key: "WEB_ADMIN_456"   // SAMA dengan di rules
 };
+
 const ADMIN_KEY = firebaseConfig.admin_key;
 
 const app = initializeApp(firebaseConfig);
@@ -86,7 +87,7 @@ async function loadThresholds() {
       const defaultThresholds = {
         tempHigh: 35,
         humHigh: 80,
-        admin_key: ADMIN_KEY
+        admin_key: WEB_ADMIN_456
       };
       await set(thresholdsRef, defaultThresholds);
       thresholds = { tempHigh: 35, humHigh: 80 };
