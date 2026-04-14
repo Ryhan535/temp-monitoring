@@ -316,6 +316,10 @@ function updateDetailsAlerts() {
 async function loadHistory(range = '1h') {
   if (!chartCanvas) return;
 
+  if (chartLastUpdateEl) {
+    chartLastUpdateEl.textContent = 'Memuat data...';
+  }
+
   const now = new Date();
   let startTime;
 
@@ -349,10 +353,23 @@ async function loadHistory(range = '1h') {
       humidity: d.humidity
     }));
 
+    if (chartLastUpdateEl) {
+      const latestEntry = formatted[formatted.length - 1];
+      if (latestEntry && latestEntry.timestamp) {
+        const updateTime = new Date(latestEntry.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        chartLastUpdateEl.textContent = `Data terakhir: ${updateTime}`;
+      } else {
+        chartLastUpdateEl.textContent = 'Belum ada data';
+      }
+    }
+
     updateChart(formatted, range);
 
   } catch (err) {
     console.error("Error load history:", err);
+    if (chartLastUpdateEl) {
+      chartLastUpdateEl.textContent = 'Gagal memuat data';
+    }
   }
 }
 
