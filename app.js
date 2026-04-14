@@ -81,13 +81,15 @@ async function loadThresholds() {
       thresholds = snapshot.val();
       // Hapus properti admin_key dari objek thresholds agar tidak mengganggu tampilan
       delete thresholds.admin_key;
+      thresholds.tempHigh = parseFloat(thresholds.tempHigh) || 35;
+      thresholds.humHigh = parseFloat(thresholds.humHigh) || 80;
       console.log('Thresholds loaded:', thresholds);
     } else {
       // Inisialisasi default dengan menyertakan admin_key
       const defaultThresholds = {
         tempHigh: 35,
         humHigh: 80,
-        admin_key: WEB_ADMIN_456
+        admin_key: ADMIN_KEY
       };
       await set(thresholdsRef, defaultThresholds);
       thresholds = { tempHigh: 35, humHigh: 80 };
@@ -100,10 +102,26 @@ async function loadThresholds() {
 }
 
 function updateThresholdDisplay() {
-  setText('threshold-temp', `${thresholds.tempHigh.toFixed(1)}°C`);
-  setText('threshold-hum', `${thresholds.humHigh.toFixed(1)}%`);
-  setText('threshold-temp-critical', `${(thresholds.tempHigh + 5).toFixed(1)}°C`);
-  setText('threshold-hum-critical', `${(thresholds.humHigh + 5).toFixed(1)}%`);
+  const tempValue = parseFloat(thresholds.tempHigh) || 35;
+  const humValue = parseFloat(thresholds.humHigh) || 80;
+
+  setText('threshold-temp', `${tempValue.toFixed(1)}°C`);
+  setText('threshold-hum', `${humValue.toFixed(1)}%`);
+  setText('threshold-temp-critical', `${(tempValue + 5).toFixed(1)}°C`);
+  setText('threshold-hum-critical', `${(humValue + 5).toFixed(1)}%`);
+
+  if (detailsElements.tempHigh) {
+    detailsElements.tempHigh.value = tempValue;
+  }
+  if (detailsElements.tempHighValue) {
+    detailsElements.tempHighValue.textContent = tempValue.toFixed(1);
+  }
+  if (detailsElements.humHigh) {
+    detailsElements.humHigh.value = humValue;
+  }
+  if (detailsElements.humHighValue) {
+    detailsElements.humHighValue.textContent = humValue.toFixed(1);
+  }
 
   if (latestData) {
     if (isIndexPage) updateIndexStatus(latestData);
@@ -115,6 +133,9 @@ onValue(thresholdsRef, (snapshot) => {
   const data = snapshot.val();
   if (data) {
     thresholds = data;
+    delete thresholds.admin_key;
+    thresholds.tempHigh = parseFloat(thresholds.tempHigh) || 35;
+    thresholds.humHigh = parseFloat(thresholds.humHigh) || 80;
     updateThresholdDisplay();
   }
 });
