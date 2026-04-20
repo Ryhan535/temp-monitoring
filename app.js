@@ -363,7 +363,8 @@ async function loadHistory(range = '1h') {
       }
     }
 
-    updateChart(formatted, range);
+    const processed = adaptiveSampling(formatted, range);
+    updateChart(processed, range);
 
   } catch (err) {
     console.error("Error load history:", err);
@@ -395,6 +396,68 @@ function samplingPerHari(data, maxPoints = 7) {
   const dailyArray = Array.from(dailyMap.values());
   dailyArray.sort((a, b) => a.timestamp - b.timestamp);
   return dailyArray.slice(-maxPoints);
+}
+
+function adaptiveSampling(data, range) {
+  if (!data.length) return data;
+
+  if (range === '1h') {
+    // ambil tiap 2-5 menit
+    const step = Math.ceil(data.length / 30); // max 30 titik
+    return data.filter((_, i) => i % step === 0);
+  }
+
+  if (range === '24h') {
+    // agregasi per jam (AVG)
+    const map = new Map();
+
+    data.forEach(d => {
+      const t = new Date(d.timestamp);
+      const key = `${t.getFullYear()}-${t.getMonth()}-${t.getDate()}-${t.getHours()}`;
+
+      if (!map.has(key)) {
+        map.set(key, { suhu: 0, humidity: 0, count: 0, timestamp: d.timestamp });
+      }
+
+      const obj = map.get(key);
+      obj.suhu += d.suhu;
+      obj.humidity += d.humidity;
+      obj.count++;
+    });
+
+    return Array.from(map.values()).map(d => ({
+      timestamp: d.timestamp,
+      suhu: d.suhu / d.count,
+      humidity: d.humidity / d.count
+    }));
+  }
+
+  if (range === '7d') {
+    // agregasi per hari (AVG)
+    const map = new Map();
+
+    data.forEach(d => {
+      const t = new Date(d.timestamp);
+      const key = `${t.getFullYear()}-${t.getMonth()}-${t.getDate()}`;
+
+      if (!map.has(key)) {
+        map.set(key, { suhu: 0, humidity: 0, count: 0, timestamp: d.timestamp });
+      }
+
+      const obj = map.get(key);
+      obj.suhu += d.suhu;
+      obj.humidity += d.humidity;
+      obj.count++;
+    });
+
+    return Array.from(map.values()).map(d => ({
+      timestamp: d.timestamp,
+      suhu: d.suhu / d.count,
+      humidity: d.humidity / d.count
+    }));
+  }
+
+  return data;
 }
 
 function updateChart(data, range) {
