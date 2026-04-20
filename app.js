@@ -403,7 +403,7 @@ function adaptiveSampling(data, range) {
 
   if (range === '1h') {
     // ambil tiap 2-5 menit
-    const step = Math.ceil(data.length / 30); // max 30 titik
+    const step = Math.ceil(data.length / 20); // max 30 titik
     return data.filter((_, i) => i % step === 0);
   }
 
