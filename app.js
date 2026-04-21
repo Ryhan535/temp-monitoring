@@ -11,6 +11,8 @@ const ADMIN_KEY = firebaseConfig.admin_key;
 const SUPABASE_URL = "https://kuhvnqwucjabrdatiycf.supabase.co/rest/v1/sensor_data";
 const SUPABASE_KEY = "sb_publishable_T21IBBwYKQJzR_NKzs6m4g_calRNBij";
 
+
+
 const app = initializeApp(firebaseConfig);
 const rtdb = getDatabase(app);
 const thresholdsRef = ref(rtdb, "thresholds");
@@ -193,6 +195,128 @@ function updateIndexStatus(data) {
   }
 
   checkAlerts({ suhu, humidity: hum, timestamp: data.timestamp });
+}
+
+// ================= PARSE TIMESTAMP =================
+function parseTimestamp(ts) {
+  return new Date(ts.replace(" ", "T"));
+}
+
+// ================= FILTER RANGE =================
+function filterByRange(data, range) {
+  const now = Date.now();
+
+  let rangeMs = 0;
+  if (range === '1h') rangeMs = 60 * 60 * 1000;
+  if (range === '24h') rangeMs = 24 * 60 * 60 * 1000;
+  if (range === '7d') rangeMs = 7 * 24 * 60 * 60 * 1000;
+
+  return data.filter(d => {
+    const t = parseTimestamp(d.timestamp).getTime();
+    return (now - t) <= rangeMs;
+  });
+}
+
+// ================= ADAPTIVE SAMPLING =================
+function adaptiveSampling(data, range) {
+  if (!data.length) return data;
+
+  // 🔹 1 JAM → ambil max 30 titik
+  if (range === '1h') {
+    const step = Math.ceil(data.length / 30);
+    return data.filter((_, i) => i % step === 0);
+  }
+
+  // 🔹 24 JAM → AVG per jam
+  if (range === '24h') {
+    const map = new Map();
+
+    data.forEach(d => {
+      const t = parseTimestamp(d.timestamp);
+      const key = `${t.getFullYear()}-${t.getMonth()}-${t.getDate()}-${t.getHours()}`;
+
+      if (!map.has(key)) {
+        map.set(key, { suhu: 0, humidity: 0, count: 0, timestamp: d.timestamp });
+      }
+
+      const obj = map.get(key);
+      obj.suhu += d.suhu;
+      obj.humidity += d.humidity;
+      obj.count++;
+    });
+
+    return Array.from(map.values()).map(d => ({
+      timestamp: d.timestamp,
+      suhu: d.suhu / d.count,
+      humidity: d.humidity / d.count
+    }));
+  }
+
+  // 🔹 7 HARI → AVG per hari
+  if (range === '7d') {
+    const map = new Map();
+
+    data.forEach(d => {
+      const t = parseTimestamp(d.timestamp);
+      const key = `${t.getFullYear()}-${t.getMonth()}-${t.getDate()}`;
+
+      if (!map.has(key)) {
+        map.set(key, { suhu: 0, humidity: 0, count: 0, timestamp: d.timestamp });
+      }
+
+      const obj = map.get(key);
+      obj.suhu += d.suhu;
+      obj.humidity += d.humidity;
+      obj.count++;
+    });
+
+    return Array.from(map.values()).map(d => ({
+      timestamp: d.timestamp,
+      suhu: d.suhu / d.count,
+      humidity: d.humidity / d.count
+    }));
+  }
+
+  return data;
+}
+
+// ================= LOAD HISTORY =================
+async function loadHistory(range) {
+  try {
+    const res = await fetch(SUPABASE_URL, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
+      }
+    });
+
+    let data = await res.json();
+
+    if (!data || !data.length) {
+      console.log("Tidak ada data");
+      return;
+    }
+
+    // 🔥 DEBUG (WAJIB cek sekali)
+    console.log("DATA TERAKHIR:", data[data.length - 1]);
+
+    // ================= SORT =================
+    data.sort((a, b) =>
+      parseTimestamp(a.timestamp) - parseTimestamp(b.timestamp)
+    );
+
+    // ================= FILTER =================
+    const filtered = filterByRange(data, range);
+
+    // ================= SAMPLING =================
+    const processed = adaptiveSampling(filtered, range);
+
+    // ================= UPDATE CHART =================
+    updateChart(processed, range);
+
+  } catch (err) {
+    console.error("Error loadHistory:", err);
+  }
 }
 
 function checkAlerts(data) {
