@@ -11,4 +11,4 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Run prune script
-        run: firebase-bridge/php prune-data.php
+        run: php firebase-bridge/prune-data.php
