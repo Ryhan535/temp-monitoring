@@ -280,45 +280,6 @@ function adaptiveSampling(data, range) {
   return data;
 }
 
-// ================= LOAD HISTORY =================
-async function loadHistory(range) {
-  try {
-    const res = await fetch(SUPABASE_URL, {
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
-      }
-    });
-
-    let data = await res.json();
-
-    if (!data || !data.length) {
-      console.log("Tidak ada data");
-      return;
-    }
-
-    // 🔥 DEBUG (WAJIB cek sekali)
-    console.log("DATA TERAKHIR:", data[data.length - 1]);
-
-    // ================= SORT =================
-    data.sort((a, b) =>
-      parseTimestamp(a.timestamp) - parseTimestamp(b.timestamp)
-    );
-
-    // ================= FILTER =================
-    const filtered = filterByRange(data, range);
-
-    // ================= SAMPLING =================
-    const processed = adaptiveSampling(filtered, range);
-
-    // ================= UPDATE CHART =================
-    updateChart(processed, range);
-
-  } catch (err) {
-    console.error("Error loadHistory:", err);
-  }
-}
-
 function checkAlerts(data) {
   const suhu = typeof data.suhu === 'number' ? data.suhu : parseFloat(data.suhu);
   const hum = typeof data.humidity === 'number' ? data.humidity : parseFloat(data.humidity);
