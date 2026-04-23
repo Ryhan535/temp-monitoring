@@ -313,6 +313,141 @@ function updateDetailsAlerts() {
   }
 }
 
+// async function loadHistory(range = '1h') {
+//   if (!chartCanvas) return;
+
+//   if (chartLastUpdateEl) {
+//     chartLastUpdateEl.textContent = 'Memuat data...';
+//   }
+
+//   const now = new Date();
+//   let startTime;
+
+//   if (range === '1h') {
+//     startTime = new Date(now.getTime() - 60 * 60 * 1000);
+//   } else if (range === '24h') {
+//     startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+//   } else {
+//     startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+//   }
+
+//   const url = `${SUPABASE_URL}?select=timestamp,suhu,humidity&timestamp=gte.${startTime.toISOString()}&order=timestamp.asc&limit=500`;
+
+//   try {
+//     const res = await fetch(url, {
+//       headers: {
+//         apikey: SUPABASE_KEY,
+//         Authorization: `Bearer ${SUPABASE_KEY}`
+//       }
+//     });
+
+//     if (!res.ok) {
+//       throw new Error(`Supabase loadHistory failed: ${res.status} ${res.statusText}`);
+//     }
+
+//     const data = await res.json();
+
+//     const formatted = data.map(d => ({
+//       timestamp: new Date(d.timestamp),
+//       suhu: d.suhu,
+//       humidity: d.humidity
+//     }));
+
+//     if (chartLastUpdateEl) {
+//       const latestEntry = formatted[formatted.length - 1];
+//       if (latestEntry && latestEntry.timestamp) {
+//         const updateTime = new Date(latestEntry.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+//         chartLastUpdateEl.textContent = `Data terakhir: ${updateTime}`;
+//       } else {
+//         chartLastUpdateEl.textContent = 'Belum ada data';
+//       }
+//     }
+
+//     const processed = adaptiveSampling(formatted, range);
+//     updateChart(processed, range);
+
+//   } catch (err) {
+//     console.error("Error load history:", err);
+//     if (chartLastUpdateEl) {
+//       chartLastUpdateEl.textContent = 'Gagal memuat data';
+//     }
+//   }
+// }
+
+// function samplingPerJam(data, maxPoints = 24) {
+//   const hourlyMap = new Map();
+//   data.forEach(item => {
+//     const date = new Date(item.timestamp);
+//     const hourKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
+//     hourlyMap.set(hourKey, item);
+//   });
+//   const hourlyArray = Array.from(hourlyMap.values());
+//   hourlyArray.sort((a, b) => a.timestamp - b.timestamp);
+//   return hourlyArray.slice(-maxPoints);
+// }
+
+// function samplingPerHari(data, maxPoints = 7) {
+//   const dailyMap = new Map();
+//   data.forEach(item => {
+//     const date = new Date(item.timestamp);
+//     const dayKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+//     dailyMap.set(dayKey, item);
+//   });
+//   const dailyArray = Array.from(dailyMap.values());
+//   dailyArray.sort((a, b) => a.timestamp - b.timestamp);
+//   return dailyArray.slice(-maxPoints);
+// }
+
+// ================== PERBAIKAN ==================
+// 1. Query Supabase diubah menjadi order=timestamp.desc + limit besar (5000) + reverse()
+// 2. Agregasi 24h dan 7d menggunakan last value per jam/hari
+// 3. Sampling 1h memastikan titik terakhir selalu tampil
+// 4. Grafik tetap mudah dibaca (max 30 titik untuk 1h, 24 titik untuk 24h, 7-8 titik untuk 7d)
+// ================================================
+
+// Hapus fungsi adaptiveSampling lama, ganti dengan fungsi baru:
+
+function sampleFor1h(data, maxPoints = 30) {
+  if (data.length <= maxPoints) return data;
+  // sampling merata tapi pastikan titik pertama dan terakhir masuk
+  const step = (data.length - 1) / (maxPoints - 1);
+  const result = [];
+  for (let i = 0; i < maxPoints; i++) {
+    const idx = Math.round(i * step);
+    result.push(data[idx]);
+  }
+  return result;
+}
+
+function aggregateByHourLast(data) {
+  const hourMap = new Map();
+  for (const item of data) {
+    const t = new Date(item.timestamp);
+    const key = `${t.getFullYear()}-${t.getMonth()}-${t.getDate()}-${t.getHours()}`;
+    if (!hourMap.has(key) || item.timestamp > hourMap.get(key).timestamp) {
+      hourMap.set(key, item);
+    }
+  }
+  const result = Array.from(hourMap.values());
+  result.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  return result;
+}
+
+function aggregateByDayLast(data) {
+  const dayMap = new Map();
+  for (const item of data) {
+    const t = new Date(item.timestamp);
+    const key = `${t.getFullYear()}-${t.getMonth()}-${t.getDate()}`;
+    if (!dayMap.has(key) || item.timestamp > dayMap.get(key).timestamp) {
+      dayMap.set(key, item);
+    }
+  }
+  const result = Array.from(dayMap.values());
+  result.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  return result;
+}
+
+// Perbaiki fungsi loadHistory
 async function loadHistory(range = '1h') {
   if (!chartCanvas) return;
 
@@ -322,16 +457,16 @@ async function loadHistory(range = '1h') {
 
   const now = new Date();
   let startTime;
-
   if (range === '1h') {
     startTime = new Date(now.getTime() - 60 * 60 * 1000);
   } else if (range === '24h') {
     startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  } else {
+  } else { // 7d
     startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   }
 
-  const url = `${SUPABASE_URL}?select=timestamp,suhu,humidity&timestamp=gte.${startTime.toISOString()}&order=timestamp.asc&limit=500`;
+  // Query dengan order desc + limit besar, lalu reverse untuk urutan naik
+  const url = `${SUPABASE_URL}?select=timestamp,suhu,humidity&timestamp=gte.${startTime.toISOString()}&order=timestamp.desc&limit=5000`;
 
   try {
     const res = await fetch(url, {
@@ -345,25 +480,33 @@ async function loadHistory(range = '1h') {
       throw new Error(`Supabase loadHistory failed: ${res.status} ${res.statusText}`);
     }
 
-    const data = await res.json();
+    let data = await res.json();
+    // Balik urutan jadi ascending (dari paling lama ke paling baru)
+    data.reverse();
 
-    const formatted = data.map(d => ({
-      timestamp: new Date(d.timestamp),
-      suhu: d.suhu,
-      humidity: d.humidity
-    }));
+    // Proses berdasarkan range
+    let processed;
+    if (range === '1h') {
+      processed = sampleFor1h(data, 30);
+    } else if (range === '24h') {
+      processed = aggregateByHourLast(data);
+    } else { // 7d
+      processed = aggregateByDayLast(data);
+    }
 
-    if (chartLastUpdateEl) {
-      const latestEntry = formatted[formatted.length - 1];
+    // Update label last update
+    if (chartLastUpdateEl && processed.length > 0) {
+      const latestEntry = processed[processed.length - 1];
       if (latestEntry && latestEntry.timestamp) {
         const updateTime = new Date(latestEntry.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
         chartLastUpdateEl.textContent = `Data terakhir: ${updateTime}`;
       } else {
         chartLastUpdateEl.textContent = 'Belum ada data';
       }
+    } else if (chartLastUpdateEl) {
+      chartLastUpdateEl.textContent = 'Belum ada data';
     }
 
-    const processed = adaptiveSampling(formatted, range);
     updateChart(processed, range);
 
   } catch (err) {
@@ -374,91 +517,13 @@ async function loadHistory(range = '1h') {
   }
 }
 
-function samplingPerJam(data, maxPoints = 24) {
-  const hourlyMap = new Map();
-  data.forEach(item => {
-    const date = new Date(item.timestamp);
-    const hourKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
-    hourlyMap.set(hourKey, item);
-  });
-  const hourlyArray = Array.from(hourlyMap.values());
-  hourlyArray.sort((a, b) => a.timestamp - b.timestamp);
-  return hourlyArray.slice(-maxPoints);
-}
+// Tidak perlu lagi fungsi samplingPerJam, samplingPerHari, adaptiveSampling (bisa dihapus atau dikomentari)
 
-function samplingPerHari(data, maxPoints = 7) {
-  const dailyMap = new Map();
-  data.forEach(item => {
-    const date = new Date(item.timestamp);
-    const dayKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-    dailyMap.set(dayKey, item);
-  });
-  const dailyArray = Array.from(dailyMap.values());
-  dailyArray.sort((a, b) => a.timestamp - b.timestamp);
-  return dailyArray.slice(-maxPoints);
-}
+// Pastikan updateChart tetap berfungsi (tidak perlu diubah, hanya pastikan data yang masuk sudah sesuai)
+// ... (kode updateChart tetap seperti semula)
 
-function adaptiveSampling(data, range) {
-  if (!data.length) return data;
-
-  if (range === '1h') {
-    // ambil tiap 2-5 menit
-    const step = Math.ceil(data.length / 20); // max 30 titik
-    return data.filter((_, i) => i % step === 0);
-  }
-
-  if (range === '24h') {
-    // agregasi per jam (AVG)
-    const map = new Map();
-
-    data.forEach(d => {
-      const t = new Date(d.timestamp);
-      const key = `${t.getFullYear()}-${t.getMonth()}-${t.getDate()}-${t.getHours()}`;
-
-      if (!map.has(key)) {
-        map.set(key, { suhu: 0, humidity: 0, count: 0, timestamp: d.timestamp });
-      }
-
-      const obj = map.get(key);
-      obj.suhu += d.suhu;
-      obj.humidity += d.humidity;
-      obj.count++;
-    });
-
-    return Array.from(map.values()).map(d => ({
-      timestamp: d.timestamp,
-      suhu: d.suhu / d.count,
-      humidity: d.humidity / d.count
-    }));
-  }
-
-  if (range === '7d') {
-    // agregasi per hari (AVG)
-    const map = new Map();
-
-    data.forEach(d => {
-      const t = new Date(d.timestamp);
-      const key = `${t.getFullYear()}-${t.getMonth()}-${t.getDate()}`;
-
-      if (!map.has(key)) {
-        map.set(key, { suhu: 0, humidity: 0, count: 0, timestamp: d.timestamp });
-      }
-
-      const obj = map.get(key);
-      obj.suhu += d.suhu;
-      obj.humidity += d.humidity;
-      obj.count++;
-    });
-
-    return Array.from(map.values()).map(d => ({
-      timestamp: d.timestamp,
-      suhu: d.suhu / d.count,
-      humidity: d.humidity / d.count
-    }));
-  }
-
-  return data;
-}
+// Untuk index page, loadHistory sudah menggunakan 1h, dan interval refresh tetap 15 menit (900000 ms)
+// Untuk details page, setupDetailsTimeButtons dan interval refresh 5 menit sudah menggunakan loadHistory yang baru
 
 function updateChart(data, range) {
   if (!chartCanvas) return;
