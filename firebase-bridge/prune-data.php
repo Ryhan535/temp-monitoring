@@ -3,10 +3,10 @@
 $SUPABASE_URL = "https://kuhvnqwucjabrdatiycf.supabase.co/rest/v1/sensor_data";
 $SUPABASE_KEY = "sb_publishable_T21IBBwYKQJzR_NKzs6m4g_calRNBij";
 
-$LIMIT = 1000; // maksimal data dihapus per run
+$LIMIT = 3000; // maksimal data dihapus per run
 
 //  BATAS 
-$cutoff = date("Y-m-d\TH:i:s", strtotime("-7 days"));
+$cutoff = date("Y-m-d\TH:i:s", strtotime("-6 days"));
 
 // AMBIL ID
 $getUrl = $SUPABASE_URL
